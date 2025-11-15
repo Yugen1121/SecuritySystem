@@ -12,11 +12,11 @@ import util.ServiceLinkedList;
  * </p> 
  */
 
-public class Borough extends Node {
+public class Borough extends CityArea {
 
 
 	@Override
-	public String getNodeType() {
+	public String getNodeType() { 
 		return "Borough";
 		
 	}

@@ -12,7 +12,7 @@ import util.ServiceLinkedList;
  * </p> 
  */
 
-public class City extends Node{
+public class City extends CityArea{
 
 	
 	@Override
