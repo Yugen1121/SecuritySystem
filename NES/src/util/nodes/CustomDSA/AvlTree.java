@@ -66,6 +66,7 @@ public class AvlTree {
 			
 			return x;
 	}
+	
 	private AvlNode leftRotate(AvlNode y) {
 		AvlNode x = y.right;
 		AvlNode z = x.left;
