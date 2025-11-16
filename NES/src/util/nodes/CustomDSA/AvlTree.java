@@ -33,6 +33,7 @@ public class AvlTree {
 	private AvlNode root;
 	private AvlNode leftMost;
 	
+	// getter functions
 	private int getHeight(AvlNode node) {
 	return node == null ? 0 : node.height;
 	}
@@ -40,6 +41,16 @@ public class AvlTree {
 	private int getBalance(AvlNode node) {
 		return node == null ? 0 : (getHeight(node.left) - getHeight(node.right)); 
 	}
+	
+	public AvlNode getRoot() {
+		return this.root;
+	}
+	
+	public AvlNode getMin() {
+		updateLeftMost();
+		return this.leftMost;
+	}
+	
 	
 	private AvlNode rightRotate(AvlNode y) {
 			AvlNode x = y.left;
