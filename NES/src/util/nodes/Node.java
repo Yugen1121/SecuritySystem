@@ -1,10 +1,13 @@
 
 package util.nodes;
+import java.util.HashMap;
+import java.util.PriorityQueue;
 import java.util.Map;
 import util.ServiceLinkedList;
 import util.Service;
-
-
+import util.nodes.CustomDSA.NeighbourNode;
+import util.*;
+import java.util.HashSet;
 /*
  * This is the base entity for anything related to Node/Location in the system.
  * 
@@ -33,6 +36,10 @@ public abstract class Node {
 	private int id;
 	protected String LocationName;
 	protected Map<String, ServiceLinkedList> availableService;
+	protected PriorityQueue<NeighbourNode> Neighbours = new PriorityQueue<>((a, b) -> Integer.compare(a.getDist(), b.getDist()));
+	protected Boolean Incident = true;
+	
+	abstract String getNodeType();
 	
 	public String getLocation() {
 		return this.LocationName;
@@ -75,6 +82,209 @@ public abstract class Node {
 		return null;
 	}
 	
-	abstract String getNodeType();
+	
+	private void MakeRequest(int incidentType, int EmergencyLevel) {
+		Map<String, Integer> requestedServices = new HashMap<>();
+		if (EmergencyLevel >= 9) {
+			// Police 5
+			requestedServices.put(Police.Type, 5);
+			// If fire
+			if (incidentType == 1) {
+				requestedServices.put(FireTruck.Type, 2);
+				requestedServices.put(Ambulance.Type, 3);
+			}
+			// if injury / attack
+			else if(incidentType == 2) {
+				requestedServices.put(Ambulance.Type, 3);
+			}
+		}
+		else if(EmergencyLevel >= 7) {
+			// Police 4
+			requestedServices.put(Police.Type, 4);
+			// If fire
+			if (incidentType == 1) {
+				requestedServices.put(FireTruck.Type, 2);
+				requestedServices.put(Ambulance.Type, 2);
+						}
+			// if injury / attack
+			else if(incidentType == 2) {
+				requestedServices.put(Ambulance.Type, 3);
+		}
+
+
+		}
+		else if(EmergencyLevel >= 5) {
+			// Police 3
+			requestedServices.put(Police.Type, 3);
+			// If fire
+			if (incidentType == 1) {
+				requestedServices.put(FireTruck.Type, 1);
+				requestedServices.put(Ambulance.Type, 2);
+			}
+			// if injury / attack
+			else if(incidentType == 2) {
+				requestedServices.put(Ambulance.Type, 2);
+			}
+
+		}
+		else if(EmergencyLevel >= 3) {
+			// police 2
+			requestedServices.put(Police.Type, 2);
+			// If fire
+			if (incidentType == 1) {
+				requestedServices.put(FireTruck.Type, 1);
+				requestedServices.put(Ambulance.Type, 1);
+			}
+			// if injury / attack
+			else if(incidentType == 2) {
+				requestedServices.put(Ambulance.Type, 1);
+			}
+
+		}
+		else {
+			// Police 1
+			requestedServices.put(Police.Type, 1);
+			// If fire
+			if (incidentType == 1) {
+				requestedServices.put(FireTruck.Type, 1);
+				requestedServices.put(Ambulance.Type, 1);
+			}
+			// if injury / attack
+			else if(incidentType == 2) {
+				requestedServices.put(Ambulance.Type, 1);
+			}
+
+		}
+		this.SearchForServices(requestedServices);
+		
+	}
+	
+	public Map<String, Integer> DispatchServices(Map<String, Integer> s, NeighbourNode Node) {
+		Node x = Node.getNode();
+		for (String map : s.keySet()) {
+			// checks if the node has the services
+			if (s.containsKey(map)) {
+				ServiceLinkedList ahead = x.availableService.get(map);
+				ServiceLinkedList behind = x.availableService.get(map);
+				ServiceLinkedList head = x.availableService.get(map);
+				// checking if the services that is in this  node are available
+				while (ahead != null || s.get(map) > 0) {
+					// head is available then we remove it from the list
+					if (ahead.getValue().getAvailability()) {
+						if (ahead == head) {
+							head = head.getNext();
+							behind = head;
+							ahead.removeNext();
+							ahead = head;
+						}
+						else {
+							behind.removeNext();
+							behind.setNext(ahead.getNext());
+							ahead.removeNext();
+							ahead = behind.getNext();
+						}
+						s.put(map, s.get(map)-1);
+					}
+					else {
+						if (behind == ahead) {
+							ahead = ahead.getNext();
+						}
+						else {
+							behind = ahead;
+							ahead = ahead.getNext();
+						}
+					}
+				}
+				if (s.get(map) <= 0) {
+					s.remove(map);
+				}
+				this.availableService.put(map, head);
+			
+			}
+		}
+
+		return s;
+	}
+	
+	public Map<String, Integer> DispatchServices(Map<String, Integer> s) {
+		for (String map : s.keySet()) {
+			// checks if the node has the services
+			if (s.containsKey(map)) {
+				ServiceLinkedList ahead = this.availableService.get(map);
+				ServiceLinkedList behind = this.availableService.get(map);
+				ServiceLinkedList head = this.availableService.get(map);
+				// checking if the services that is in this  node are available
+				while (ahead != null || s.get(map) > 0) {
+					// head is available then we remove it from the list
+					if (ahead.getValue().getAvailability()) {
+						if (ahead == head) {
+							head = head.getNext();
+							behind = head;
+							ahead.removeNext();
+							ahead = head;
+						}
+						else {
+							behind.removeNext();
+							behind.setNext(ahead.getNext());
+							ahead.removeNext();
+							ahead = behind.getNext();
+						}
+						s.put(map, s.get(map)-1);
+					}
+					else {
+						if (behind == ahead) {
+							ahead = ahead.getNext();
+						}
+						else {
+							behind = ahead;
+							ahead = ahead.getNext();
+						}
+					}
+				}
+				if (s.get(map) <= 0) {
+					s.remove(map);
+				}
+				this.availableService.put(map, head);
+			
+			}
+		}
+
+		return s;
+	}
+	
+	public void SearchForServices(Map<String, Integer> s) {
+		// check if the node itself has the services needed
+		// iterating through the list of services that are needed
+		s = this.DispatchServices(s);	
+		if (!s.isEmpty()) {
+			// make a deep copy of the neighbours
+			PriorityQueue<NeighbourNode> heap = new PriorityQueue<>(this.Neighbours);
+			NeighbourNode node = heap.poll();
+			HashSet<Node> visited = new HashSet<>();
+			while (!s.isEmpty() && node != null) {
+				if (!visited.contains(node.getNode())) {
+					visited.add(node.getNode());
+					s = this.DispatchServices(s, node);
+					if(s.isEmpty()) {
+						break;
+					}
+					// get the copy of neighbour of the node
+					PriorityQueue<NeighbourNode> copy = new PriorityQueue<>(node.getNode().Neighbours);
+					
+					// add the copy to the heap with increased distance 
+					for (NeighbourNode i: copy) {
+						NeighbourNode y = new NeighbourNode(i.getNode(), i.getDist()+node.getDist());
+						heap.add(y);
+					}
+					
+				}
+				node = heap.poll();
+			}
+			
+		}
+		
+		return;
+		
+	};
 	
 }
