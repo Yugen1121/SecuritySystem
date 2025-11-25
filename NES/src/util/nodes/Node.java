@@ -36,7 +36,7 @@ public abstract class Node {
 	private int id;
 	protected String LocationName;
 	protected Map<String, ServiceLinkedList> availableService;
-	protected PriorityQueue<NeighbourNode> Neighbours = new PriorityQueue<>((a, b) -> Integer.compare(a.getDist(), b.getDist()));
+	protected PriorityQueue<NeighbourNode> Neighbours = new PriorityQueue<>((a, b) -> Float.compare(a.getDist(), b.getDist()));
 	protected Boolean Incident = true;
 	
 	abstract String getNodeType();
@@ -214,7 +214,7 @@ public abstract class Node {
 				ServiceLinkedList behind = this.availableService.get(map);
 				ServiceLinkedList head = this.availableService.get(map);
 				// checking if the services that is in this  node are available
-				while (ahead != null || s.get(map) > 0) {
+				while (ahead != null && s.get(map) > 0) {
 					// head is available then we remove it from the list
 					if (ahead.getValue().getAvailability()) {
 						if (ahead == head) {
@@ -257,7 +257,6 @@ public abstract class Node {
 		// iterating through the list of services that are needed
 		s = this.DispatchServices(s);	
 		if (!s.isEmpty()) {
-			// make a deep copy of the neighbours
 			PriorityQueue<NeighbourNode> heap = new PriorityQueue<>(this.Neighbours);
 			NeighbourNode node = heap.poll();
 			HashSet<Node> visited = new HashSet<>();
@@ -268,15 +267,8 @@ public abstract class Node {
 					if(s.isEmpty()) {
 						break;
 					}
-					// get the copy of neighbour of the node
-					PriorityQueue<NeighbourNode> copy = new PriorityQueue<>(node.getNode().Neighbours);
 					
-					// add the copy to the heap with increased distance 
-					for (NeighbourNode i: copy) {
-						NeighbourNode y = new NeighbourNode(i.getNode(), i.getDist()+node.getDist());
-						heap.add(y);
-					}
-					
+					heap = this.makeDuplicate(node, heap);
 				}
 				node = heap.poll();
 			}
@@ -286,5 +278,29 @@ public abstract class Node {
 		return;
 		
 	};
+	
+	private PriorityQueue<NeighbourNode> makeDuplicate(NeighbourNode parent, PriorityQueue<NeighbourNode> heap) {
+		// get the copy of neighbour of the node
+		PriorityQueue<NeighbourNode> copy = new PriorityQueue<>(parent.getNode().Neighbours);
+		
+		// add the copy to the heap with increased distance 
+		for (NeighbourNode i: copy) {
+			// makes sure the closed road is avoided
+			if (i.getOpen()) {
+				float dist = i.getDist()+parent.getDist();
+				Node n = i.getNode();
+				// if the road is congested then the distance is assumed to be 1.1 times the original
+				if (i.getCongested()) {
+					dist *= 1.1;
+				}
+				NeighbourNode y = new NeighbourNode(n, dist);
+				y.setParent(parent);
+				heap.add(y);
+			}
+		}
+		return heap;
+	}
+	
+	
 	
 }
