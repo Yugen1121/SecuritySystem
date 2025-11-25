@@ -259,16 +259,16 @@ public abstract class Node {
 		if (!s.isEmpty()) {
 			PriorityQueue<NeighbourNode> heap = new PriorityQueue<>(this.Neighbours);
 			NeighbourNode node = heap.poll();
-			HashSet<Node> visited = new HashSet<>();
+			HashSet<Integer> visited = new HashSet<>();
 			while (!s.isEmpty() && node != null) {
-				if (!visited.contains(node.getNode())) {
-					visited.add(node.getNode());
+				if (!visited.contains(node.getNode().getID())) {
+					visited.add(node.getNode().getID());
 					s = this.DispatchServices(s, node);
 					if(s.isEmpty()) {
 						break;
 					}
 					
-					heap = this.makeDuplicate(node, heap);
+					this.makeDuplicate(node, heap);
 				}
 				node = heap.poll();
 			}
@@ -280,11 +280,8 @@ public abstract class Node {
 	};
 	
 	private PriorityQueue<NeighbourNode> makeDuplicate(NeighbourNode parent, PriorityQueue<NeighbourNode> heap) {
-		// get the copy of neighbour of the node
-		PriorityQueue<NeighbourNode> copy = new PriorityQueue<>(parent.getNode().Neighbours);
-		
 		// add the copy to the heap with increased distance 
-		for (NeighbourNode i: copy) {
+		for (NeighbourNode i:  new PriorityQueue<>(parent.getNode().Neighbours)) {
 			// makes sure the closed road is avoided
 			if (i.getOpen()) {
 				float dist = i.getDist()+parent.getDist();
