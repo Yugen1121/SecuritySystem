@@ -71,15 +71,35 @@ public abstract class Node {
 		this.availableService = x; 
 	}
 	
-	public ServiceLinkedList popService(String Type) {
+	public Service popService(String Type) {
 		if (this.availableService.containsKey(Type)) {
-			ServiceLinkedList OldHead = this.availableService.get(Type);
-			ServiceLinkedList NewHead = OldHead.getNext();
-			this.availableService.put(Type, NewHead);
-			return OldHead;
-			
+			ServiceLinkedList n = this.availableService.get(Type);
+			this.availableService.put(Type, n!=null? n.getNext(): null);
+			return n.getValue();
 		}
 		return null;
+	}
+	
+	public Map<String, ServiceLinkedList> getAvailableServices(){
+		return this.availableService;
+	}
+	
+	public void removeServiceById(Service node) {
+		ServiceLinkedList dummy = this.availableService.get(node.getServiceType());
+		if (dummy==null) return;
+		if (dummy.getValue() == node || node.getID() == dummy.getValue().getID()) {
+			this.availableService.put(dummy.getValue().getServiceType(),dummy.getNext());
+		}
+		else {
+			while (dummy.getNext() != null) {
+				Service n = dummy.getNext().getValue(); 
+				if ( n == node || node.getID() == n.getID()) {
+					dummy.setNext(dummy.getNext().getNext());
+					break;
+				}
+				dummy = dummy.getNext();
+			}
+		}
 	}
 	
 	
@@ -161,48 +181,41 @@ public abstract class Node {
 	
 	public Map<String, Integer> DispatchServices(Map<String, Integer> s, NeighbourNode Node) {
 		Node x = Node.getNode();
+		
 		for (String map : s.keySet()) {
 			// checks if the node has the services
-			if (s.containsKey(map)) {
-				ServiceLinkedList ahead = x.availableService.get(map);
-				ServiceLinkedList behind = x.availableService.get(map);
+			if (x.getAvailableServices().containsKey(map)) {
+				
 				ServiceLinkedList head = x.availableService.get(map);
-				// checking if the services that is in this  node are available
-				while (ahead != null || s.get(map) > 0) {
-					// head is available then we remove it from the list
-					if (ahead.getValue().getAvailability()) {
-						if (ahead == head) {
-							head = head.getNext();
-							behind = head;
-							ahead.removeNext();
-							ahead = head;
-						}
-						else {
-							behind.removeNext();
-							behind.setNext(ahead.getNext());
-							ahead.removeNext();
-							ahead = behind.getNext();
-						}
+				while (head!=null && s.get(map) > 0) {
+					if (head.getValue().getAvailability()) {
+						head = head.getNext();
+						s.put(map, s.get(map)-1);
+						//need to use run function here
+					}
+					else {
+						break;
+					}
+				}
+				x.availableService.put(map, head);
+				if (head==null || s.get(map) <= 0) continue;
+				ServiceLinkedList curr = head;
+				
+				while (curr.getNext() != null && s.get(map)>0) {
+					ServiceLinkedList n = curr.getNext();
+					if (n.getValue().getAvailability()) {
+						curr.setNext(n.getNext());
 						s.put(map, s.get(map)-1);
 					}
 					else {
-						if (behind == ahead) {
-							ahead = ahead.getNext();
-						}
-						else {
-							behind = ahead;
-							ahead = ahead.getNext();
-						}
+						curr = curr.getNext();
 					}
 				}
-				if (s.get(map) <= 0) {
-					s.remove(map);
-				}
-				this.availableService.put(map, head);
-			
+				
+				
 			}
 		}
-
+		
 		return s;
 	}
 	
@@ -257,7 +270,7 @@ public abstract class Node {
 		// iterating through the list of services that are needed
 		s = this.DispatchServices(s);	
 		if (!s.isEmpty()) {
-			PriorityQueue<NeighbourNode> heap = new PriorityQueue<>(this.Neighbours);
+			PriorityQueue<NeighbourNode> heap = this.makeDuplicate(new NeighbourNode(this, 0), this.Neighbours);
 			NeighbourNode node = heap.poll();
 			HashSet<Integer> visited = new HashSet<>();
 			while (!s.isEmpty() && node != null) {
