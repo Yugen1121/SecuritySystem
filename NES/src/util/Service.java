@@ -68,7 +68,7 @@ public abstract class Service {
 		 * Psudo code
 		 * update the distance 
 		 * if the parent is not null
-		 * 	check the distance if its greter than the current node dist - parent node dist
+		 * 	check the distance if its greater than the current node dist - parent node dist 
 		 * 	if less than or equal to 0 
 		 * 	than update
 		 * else 
@@ -83,7 +83,9 @@ public abstract class Service {
 			float difference = this.path.getDist()-this.path.getParent().getDist();
 			if (difference - this.distanceTravelled <= 0) {
 				this.distanceTravelled = this.distanceTravelled - difference;
+				this.path.getNode().removeServiceById(this);
 				this.path = this.path.getParent();
+				this.path.getNode().addService(this);
 				this.place = this.path.getNode();
 			}
 		}

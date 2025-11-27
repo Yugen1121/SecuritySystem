@@ -1,4 +1,5 @@
 package util;
+import util.nodes.Node;
 
 /*
  * Represents a Ambulance object in the system 
@@ -9,9 +10,10 @@ package util;
  */
 
 public class Ambulance extends Service{
+	public static final String Type = "Police";
 	
-	public Ambulance(int id) {
-		this.setID(id);
+	public Ambulance(Node place, int id) {
+		super(place, id);
 	}
 	
 	@Override
@@ -19,6 +21,5 @@ public class Ambulance extends Service{
 		// TODO Auto-generated method stub
 		return "Ambulance";
 	}
-	
 }
 
