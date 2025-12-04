@@ -1,32 +1,46 @@
 package util;
 import util.nodes.*;
 import util.nodes.CustomDSA.NeighbourNode;
-/*
- * This is the base entity for anything related to service in the system.
- * 
+import util.nodes.CustomDSA.TreeNode;
+
+/**
+ * Represents the base abstract entity for all emergency or utility service
+ * units in the system. A Service object models a moving agent such as
+ * a police car, ambulance, fire truck, or utility repair vehicle.
+ *
  * <p>
- * This class provides attributes and function for all the emergency or utility services has unique id and is associated
- * with Node class representing it's current location.
+ * Each service has:
+ * <ul>
+ *     <li>A unique service ID</li>
+ *     <li>A current location represented by a Node</li>
+ *     <li>Availability and incident level indicators</li>
+ *     <li>A path represented as a chain of NeighbourNode instances</li>
+ *     <li>A speed and distance tracker for movement simulation</li>
+ * </ul>
  * </p>
- * 
- * <h2>
- * Responsibilities 
- * </h2>
+ *
+ * <h2>Responsibilities</h2>
  * <ul>
- * <li>Store the id of the service.</li>
- * <li>Store and manage the current location of the service.</li>
- * <li>Enforce that all the service subclass has their service type.</li>
+ *     <li>Maintain core properties of a service unit (ID, location, status).</li>
+ *     <li>Provide movement logic through the run() method.</li>
+ *     <li>Ensure service subclasses define their service type through getServiceType().</li>
  * </ul>
- * 
- * <h2>Subclass requirement</h2>
+ *
+ * <h2>Subclass Requirements</h2>
  * <ul>
- * <li>Must implement the getServiceType().</li>
- * <li>Should assign the two variable.</li>
+ *     <li>Must implement getServiceType() to define the service's category.</li>
+ *     <li>Should initialize additional state values such as speed, availability, etc.</li>
  * </ul>
+ *
+ * <h2>Thread Safety</h2>
+ * <p>
+ * Critical fields that may be accessed by multiple threads (location, path, availability,
+ * incident level) are protected via synchronized blocks to avoid inconsistent reads
+ * and writes. Movement logic inside run() assumes invocation from a controlled loop.
+ * </p>
  */
 
-
-public abstract class Service {
+public abstract class Service{
 	protected final Integer id;
 	protected Node place;
 	protected boolean available;
@@ -34,6 +48,7 @@ public abstract class Service {
 	protected NeighbourNode path;
 	protected int speed;
 	protected float distanceTravelled;
+	
 	public Service(Node place, int id) {
 		this.place = place;
 		this.id = id;
@@ -44,7 +59,10 @@ public abstract class Service {
 	}
 	
 	public void setLocation(Node place) {
-		this.place = place;
+		synchronized (this) {
+			this.place = place;
+	    }
+		
 	}
 	
 	public int getID() {
@@ -52,7 +70,9 @@ public abstract class Service {
 	}
 	
 	public void setPath(NeighbourNode Path) {
-		this.path = Path;
+		synchronized(this) {
+			this.path = Path;
+		}
 	}
 	
 	public void run() {
@@ -98,11 +118,15 @@ public abstract class Service {
 	}
 	
 	public boolean getAvailability() {
-		return this.available;
+		synchronized(this) {
+			return this.available;
+		}
 	}
 	
 	public int getIncidentLevel() {
-		return this.incidentLevel;
+		synchronized(this) {
+			return this.incidentLevel;
+		}
 	}
 	
 	public abstract String getServiceType();
