@@ -61,9 +61,8 @@ public class Incident {
 		return this.incidentOn;
 	}
 	
-	public void setIncidentOf() {
+	public void setIncidentOff() {
 		this.incidentOn = false;
 	}
-	
 
 }
