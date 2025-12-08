@@ -10,6 +10,7 @@ public class Incident {
 	private int incidentLevel;
 	private int incidentType;
 	private Map<String, ArrayList<Integer>> dispatchList;
+	private boolean incidentOn = true;
 	
 	public Incident(int id, Node node, int incidentLevel, int incidentType) {
 		this.id = id;
@@ -54,6 +55,14 @@ public class Incident {
 	
 	public Map<String, ArrayList<Integer>> getDispatchList(){
 		return this.dispatchList;
+	}
+	
+	public boolean getIncidentOn() {
+		return this.incidentOn;
+	}
+	
+	public void setIncidentOf() {
+		this.incidentOn = false;
 	}
 	
 
