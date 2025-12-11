@@ -146,6 +146,7 @@ public class Environment {
 			HashSet<Integer> visited = new HashSet<>();
 			visited.add(n.getID());
 			while (!s.isEmpty() && node != null) {
+				if (!node.getOpen()) continue;
 				if (!visited.contains(node.getNode().getID())) {
 					visited.add(node.getNode().getID());
 					s = this.DispatchServices(s, node, incident);
