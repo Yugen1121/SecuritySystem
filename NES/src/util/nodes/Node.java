@@ -3,13 +3,12 @@ package util.nodes;
 import java.util.HashMap;
 import java.util.PriorityQueue;
 import java.util.Map;
-import util.ServiceLinkedList;
 import util.Service;
 import util.nodes.CustomDSA.NeighbourNode;
-import util.nodes.CustomDSA.TreeNode;
 import util.*;
-import java.util.HashSet;
-import java.util.ArrayList;
+import util.Ambulance;
+import util.FireTruck;
+import util.Police;
 
 /*
  * This is the base entity for anything related to Node/Location in the system.
@@ -38,17 +37,22 @@ import java.util.ArrayList;
 public abstract class Node{
 	private int id;
 	protected String LocationName;
-	protected Map<String, ServiceLinkedList> availableService;
 	protected PriorityQueue<NeighbourNode> Neighbours = new PriorityQueue<>((a, b) -> Float.compare(a.getDist(), b.getDist()));
 	protected Boolean Incident = true;
-	protected Map<Integer, ArrayList<Incident>> incidents;
+	protected Map<String, Map<Integer, Incident>> incidents;
+	protected Map<String, Map<Integer, Service>> services;
+	protected Map<String, Integer> requiredServices;
 	
 	public Node(int id, String LocationName) {
 		this.id = id;
 		this.LocationName = LocationName;
-		incidents.put(1, new ArrayList<Incident>());
-		incidents.put(2, new ArrayList<Incident>());
-		incidents.put(3, new ArrayList<Incident>());
+		incidents.put(Police.Type, new HashMap<Integer, Incident>());
+		incidents.put(FireTruck.Type, new HashMap<Integer, Incident>());
+		incidents.put(Ambulance.Type, new HashMap<Integer, Incident>());
+		
+		services.put(Police.Type, new HashMap<Integer, Service>());
+		services.put(FireTruck.Type, new HashMap<Integer, Service>());
+		services.put(Ambulance.Type, new HashMap<Integer, Service>());
 	}
 
 	abstract String getNodeType();
@@ -69,73 +73,90 @@ public abstract class Node{
 		return this.Neighbours;
 	}
 	
-	public Map<String, ServiceLinkedList> getServices(){
-		return this.availableService;
+	public Map<String, Map<Integer, Service>> getServices(){
+		return this.services;
 	}
 	
 	public void addService(Service x) {
 		synchronized(this){
-			if (this.availableService.containsKey(x.getServiceType())) {
-				String Type = x.getServiceType();
-				ServiceLinkedList list = this.availableService.get(Type);
-				ServiceLinkedList ToAdd = new ServiceLinkedList(x);
-				ToAdd.setNext(list);
-				this.availableService.put(Type, ToAdd);
-				
-			}else {
-				this.availableService.put(x.getServiceType(), new ServiceLinkedList(x));
-			}
-		}
-	}
-	
-	
-	public void setService(Map<String, ServiceLinkedList> x) {
-		this.availableService = x; 
-	}
-	
-	public Service popService(String Type) {
-		synchronized(this) {
-			if (this.availableService.containsKey(Type)) {
-				ServiceLinkedList n = this.availableService.get(Type);
-				this.availableService.put(Type, n!=null? n.getNext(): null);
-				return n.getValue();
-			}
-			return null;
-		}
-	}
-	
-	public Map<String, ServiceLinkedList> getAvailableServices(){
-		return this.availableService;
-	}
-	
-	public void removeServiceById(Service node) {
-		synchronized(this) {
-			ServiceLinkedList dummy = this.availableService.get(node.getServiceType());
-			if (dummy==null) return;
-			if (dummy.getValue() == node || node.getID() == dummy.getValue().getID()) {
-				this.availableService.put(dummy.getValue().getServiceType(),dummy.getNext());
+			Map<Integer, Service> type = this.services.get(x.getServiceType());
+			if (type != null) {
+				type.put(x.getID(), x);
 			}
 			else {
-				while (dummy.getNext() != null) {
-					Service n = dummy.getNext().getValue(); 
-					if ( n == node || node.getID() == n.getID()) {
-						dummy.setNext(dummy.getNext().getNext());
-						break;
-					}
-					dummy = dummy.getNext();
-				}
+				this.services.put(x.getServiceType(), new HashMap<Integer, Service>());
+				this.services.get(x.getServiceType()).put(x.getID(), x);
 			}
+		}
+	}
+	
+	
+	public void setService(Map<String, Map<Integer, Service>> x) {
+		this.services = x; 
+	}
+	
+
+	
+	
+	public void removeService(Service node) {
+		synchronized(this) {
+			Map<Integer, Service> type = this.services.get(node.getServiceType());
+			if (type != null) {
+				type.remove(node.getID());
+			}
+			
 		}
 	}	
 	
 	// returns a the incident rate of each kind of incident.
-	public Map<Integer, Float> getIncidentRate() {
-		Map<Integer, Float> rate = new HashMap<>();
-		for (int x: this.incidents.keySet()) {
+	public Map<String, Float> getIncidentRate() {
+		Map<String, Float> rate = new HashMap<>();
+		for (String x: this.incidents.keySet()) {
 			float number = this.incidents.get(x).size()/100; 
 			rate.put(x, number);
 		}
 		return rate;
 	}
 	
+	// re-caluclates the number of services required in the node
+	public void recalculateServiceRequired() {
+		Map<String, Float> incidentRate = this.getIncidentRate();
+		
+		for (String x: incidentRate.keySet()) {
+			Float rate = incidentRate.get(x);
+			if (rate < 0.3) {
+				this.requiredServices.put(x, 1);
+			}
+			else if (rate < 1) {
+				this.requiredServices.put(x, 2);
+			}
+			else if (rate < 2) {
+				this.requiredServices.put(x, 3);
+			}
+			else {
+				this.requiredServices.put(x, 4);
+			}
+		}
+	}
+	
+	
+	public void addToIncidents(Incident i) {
+		if (i == null) return;
+		int x = i.getType();
+		this.incidents.get(x).put(i.getId(), i);
+		
+			
+	}
+	
+	public Map<String, Integer> numberOfCurrentServices() {
+		Map<String, Integer> re = new HashMap<String, Integer>();
+		for (String x: this.services.keySet()) {
+			re.put(x, this.services.get(x).size());
+		}
+		return re;
+	}
+	
+	public Map<String, Integer> getRequiredServices(){
+		return this.requiredServices;
+	}
 }
