@@ -184,6 +184,22 @@ public class Environment {
 		return heap;
 	}
 	
+	private PriorityQueue<NeighbourNode> makeDuplicate(PriorityQueue<NeighbourNode> heap, NeighbourNode child) {
+		for (NeighbourNode i: new PriorityQueue<>(child.getNode().getNeighbour())) {
+			if(i.getOpen()) {
+				float dist = i.getDist() + child.getDist();
+				Node n = i.getNode();
+				if (i.getCongested()) {
+					dist *= 1.1;
+				}
+				NeighbourNode y = new NeighbourNode(n, dist);
+				child.setParent(y);
+				heap.add(y);
+			}
+		}
+		return heap;  
+		
+	}
 	
 	// dynamic reassignment of the services after the incident is resolved
 	// The idea here is to check the number of services required in the current node. 
@@ -193,7 +209,41 @@ public class Environment {
 	
 	//check if the current node has excess services
 	private void reallocateServices(Node node) {
+		Map< String, Integer> required = new HashMap<>(node.getRequiredServices());
+		Map<String, Map<Integer, Service>> services = new HashMap<>(node.getServices());
+		for (String s: services.keySet()) {
+			Map<Integer, Service> serv = services.get(s);
+			for (int i: serv.keySet()) {
+				Service service = serv.get(i);
+				if (service.getAvailability()) {
+					int num = required.get(s);
+					if (num > 0) {
+						serv.remove(i);
+						required.put(s, num-1);
+					}
+					else {
+						break;
+					}
+				}
+			}
+			if (serv.isEmpty()) {
+				services.remove(s);
+			}
+			
+		}
+		
+		NeighbourNode start = new NeighbourNode(node, 0);
+		
+		PriorityQueue<NeighbourNode> queue = makeDuplicate(node.getNeighbour(), start);
+		while (!queue.isEmpty() && !services.isEmpty()) {
+			NeighbourNode node1 = queue.poll();
+			for (String s: services.keySet()) {
+				
+				}
+		}
 		
 	}
+	
+	
 	
 }
