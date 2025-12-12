@@ -1,7 +1,6 @@
 package util;
 import util.nodes.*;
 import util.nodes.CustomDSA.NeighbourNode;
-import util.nodes.CustomDSA.TreeNode;
 
 /**
  * Represents the base abstract entity for all emergency or utility service
@@ -76,44 +75,27 @@ public abstract class Service{
 	}
 	
 	public void run() {
-		/*
-		 * As we have the variable called path we want the main function to check if the path 
-		 * variable is null or not if its not null we want the service to run at a speed per second/frame
-		 * say we have a said speed for each of the services and distance tracker. Each frame increases
-		 * the distance by the speed. if the distance reaches a (path.dist - path.parent.dist) then change
-		 * path to its parent. We continue this until the path becomes null.
-		 */
-		
-		/*
-		 * Psudo code
-		 * update the distance 
-		 * if the parent is not null
-		 * 	check the distance if its greater than the current node dist - parent node dist 
-		 * 	if less than or equal to 0 
-		 * 	than update
-		 * else 
-		 * 	current node dist - dist
-		 * 	if less than or equal to 0
-		 * 		then update
-		 * 		dist = 0
-		 *  
-		 */
-		this.distanceTravelled += this.speed;
-		if (this.path.getParent() != null) {
-			float difference = this.path.getDist()-this.path.getParent().getDist();
-			if (difference - this.distanceTravelled <= 0) {
-				this.distanceTravelled = this.distanceTravelled - difference;
-				this.path.getNode().removeServiceById(this);
-				this.path = this.path.getParent();
-				this.path.getNode().addService(this);
-				this.place = this.path.getNode();
-			}
+		if (path == null) return;
+		if (path.getParent() == null) {
+			path = null;
+			this.distanceTravelled = 0;
 		}
-		else {
-			if((this.path.getDist() - this.distanceTravelled) <= 0) {
-				this.path = null;
-				this.distanceTravelled = 0;
-			}
+		// increase the distance
+		this.distanceTravelled += this.speed;
+		// check if the distance travelled is equal or greater than the nex node dist
+		if (this.distanceTravelled >= path.getParent().getDist()) {
+			// remove the service from current node
+			path.getNode().removeService(this);
+			// move to next node
+			path = path.getParent();
+			Node n = path.getNode();
+			// update the position
+			n.addService(this);
+		}
+		// if the current node is the end the stop
+		if (this.path.getParent() == null) {
+			path = null;
+			this.distanceTravelled = 0;
 		}
 	}
 	
@@ -121,6 +103,14 @@ public abstract class Service{
 		synchronized(this) {
 			return this.available;
 		}
+	}
+	
+	public void setUnAvailable() {
+		this.available = false;
+	}
+	
+	public void setAvailable() {
+		this.available = true;
 	}
 	
 	public int getIncidentLevel() {
