@@ -32,13 +32,24 @@ public class NeighbourNode {
 	private Node node;
 	private Boolean open = true;
 	private Boolean congested = false;
-	private boolean peakCongestion = false;
 	private NeighbourNode parent = null;
+	
+	public NeighbourNode(NeighbourNode n) {
+		dist = n.getDist();
+		node = n.getNode();
+		open = n.getOpen();
+		congested = n.getCongested();
+		parent = n.getParent();
+	}
 	
 	public NeighbourNode(Node node, float key) {
 		this.node = node;
 		this.dist = key;
 		
+	}
+	
+	public void setDist(float d) {
+		this.dist = d;
 	}
 	
 	public float getDist() {
