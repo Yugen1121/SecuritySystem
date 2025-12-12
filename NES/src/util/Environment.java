@@ -1,7 +1,6 @@
 package util;
 import util.nodes.Node;
 import util.nodes.CustomDSA.NeighbourNode;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -105,6 +104,35 @@ public class Environment {
 		
 	}
 	
+	
+	public NeighbourNode flipPath(NeighbourNode node) {
+		ArrayList<NeighbourNode> ls = new ArrayList<>();
+		ArrayList<Float> ds = new ArrayList<>();
+		while (node != null) {
+			ls.add(new NeighbourNode(node));
+			ds.add(node.getDist());
+			node = node.getParent();
+		}
+		
+		// linkes new nodes
+		for (int i = 0; i < ls.size()-1; i++) {
+			ls.get(i).setParent(ls.get(i+1));
+		}
+	
+		float prev = 0;
+		for (int i = ds.size()-2; i > -1; i--) {
+			NeighbourNode n = ls.get(i);
+			float x = ds.get(i);
+			float y = ds.get(i+1);
+			float newDist = y-x + prev;
+			prev = newDist;
+			n.setDist(newDist);
+		}
+		NeighbourNode head = ls.get(ls.size()-1); 
+		head.setDist(0);
+		return head;
+	}
+	
 	public Map<String, Integer> DispatchServices(Map<String, Integer> s, NeighbourNode node, Incident incident) {
 		Map<String, Map<Integer, Service>> mainMap = node.getNode().getServices();
 		for (String key : s.keySet()) {
@@ -115,10 +143,10 @@ public class Environment {
 					// get the map of type of incident
 					Iterator<Integer> it = services.keySet().iterator();
 					
-					while (!services.keySet().isEmpty() && it.hasNext() && s.get(key) > 0){
+					while (it.hasNext() && s.get(key) > 0){
 						Service curr = services.get(it.next()); 
 						if (curr.available) {
-							curr.setPath(node);
+							curr.setPath(flipPath(node));
 							curr.setUnAvailable();
 							incident.addToDispatchList(key, curr.getID());
 							it.remove();
@@ -146,7 +174,10 @@ public class Environment {
 			HashSet<Integer> visited = new HashSet<>();
 			visited.add(n.getID());
 			while (!s.isEmpty() && node != null) {
-				if (!node.getOpen()) continue;
+				if (!node.getOpen()) {
+					node = heap.poll();
+					continue;
+				}
 				if (!visited.contains(node.getNode().getID())) {
 					visited.add(node.getNode().getID());
 					s = this.DispatchServices(s, node, incident);
@@ -235,11 +266,36 @@ public class Environment {
 		NeighbourNode start = new NeighbourNode(node, 0);
 		
 		PriorityQueue<NeighbourNode> queue = makeDuplicate(node.getNeighbour(), start);
+		HashSet<Integer> visited = new HashSet<>();
 		while (!queue.isEmpty() && !services.isEmpty()) {
 			NeighbourNode node1 = queue.poll();
-			for (String s: services.keySet()) {
-				
+			
+			if (visited.contains(node1.getNode().getID())) continue;
+			Map<String, Integer> req = node1.getNode().getNeededServices();
+			
+			for (String s: req.keySet()) {
+					Map<Integer, Service> serv = services.get(s);
+					if (serv == null) continue;
+					Iterator<Integer> iter = serv.keySet().iterator();
+					while(!serv.isEmpty() && req.get(s) > 0) {
+						
+						// get an service from serv then removee it 
+						int key = iter.next();
+						Service curr = serv.get(key);
+						curr.setPath(node1);
+						iter.remove();
+		
+						// decrement the req.get(s) by 1
+						req.put(s, req.get(s)-1);
+					}
+					// checks if the services is empty after the iteration.
+					if (serv.isEmpty()) {
+						services.remove(s);
+					}
 				}
+			// add the neighbour of current node and point the node1 to the new nodes
+			this.makeDuplicate(queue, node1);
+			
 		}
 		
 	}
