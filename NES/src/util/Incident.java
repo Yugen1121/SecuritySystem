@@ -33,6 +33,8 @@ public class Incident {
 		}
 	}
 	
+	
+	
 	public int getId() {
 		return this.id;
 	}
@@ -49,8 +51,19 @@ public class Incident {
 		return this.incidentLevel;
 	}
 
-	public int getType() {
-		return this.incidentType;
+	public String getType() {
+		if (this.incidentType == 1) {
+			return "Polic";
+		}
+		else if(this.incidentType == 2) {
+			return "Ambulance";
+		}
+		else if(this.incidentType == 3){
+			return "FireTruck";
+		}
+		else {
+			return "Pollice";
+		}
 	}
 	
 	public Map<String, ArrayList<Integer>> getDispatchList(){
