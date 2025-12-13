@@ -39,9 +39,9 @@ public abstract class Node{
 	protected String LocationName;
 	protected PriorityQueue<NeighbourNode> Neighbours = new PriorityQueue<>((a, b) -> Float.compare(a.getDist(), b.getDist()));
 	protected Boolean Incident = true;
-	protected Map<String, Map<Integer, Incident>> incidents;
-	protected Map<String, Map<Integer, Service>> services;
-	protected Map<String, Integer> requiredServices;
+	protected Map<String, Map<Integer, Incident>> incidents = new HashMap<>();
+	protected Map<String, Map<Integer, Service>> services = new HashMap<>();
+	protected Map<String, Integer> requiredServices = new HashMap<>();
 	
 	public Node(int id, String LocationName) {
 		this.id = id;
@@ -142,13 +142,13 @@ public abstract class Node{
 	
 	public void addToIncidents(Incident i) {
 		if (i == null) return;
-		int x = i.getType();
+		String x = i.getType();
 		this.incidents.get(x).put(i.getId(), i);
 		
 			
 	}
 	
-	public Map<String, Integer> numberOfCurrentServices() {
+	public Map<String, Integer> getNumberOfCurrentServices() {
 		Map<String, Integer> re = new HashMap<String, Integer>();
 		for (String x: this.services.keySet()) {
 			re.put(x, this.services.get(x).size());
@@ -158,5 +158,20 @@ public abstract class Node{
 	
 	public Map<String, Integer> getRequiredServices(){
 		return this.requiredServices;
+	}
+	
+	public Map<String, Integer> getNeededServices(){
+		Map<String, Integer> r = new HashMap<String, Integer>(this.requiredServices);
+		Map<String, Integer> currentNum = this.getNumberOfCurrentServices();
+		for (String i: r.keySet()) {
+			Integer num = currentNum.get(i);
+			if (num != null) {
+				int result = r.get(i) - num;
+				if (result > 0) {
+					r.put(i, result);
+				}
+			}
+		}
+		return r;
 	}
 }
