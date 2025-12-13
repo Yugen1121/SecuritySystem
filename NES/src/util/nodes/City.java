@@ -1,9 +1,8 @@
 package util.nodes;
 
-import java.util.Map;
+
 import java.util.PriorityQueue;
 import util.ServiceLinkedList;
-import util.nodes.CustomDSA.AvlTree;
 
 /*
  * Represents a City object in the system 
@@ -14,27 +13,15 @@ import util.nodes.CustomDSA.AvlTree;
  */
 
 public class City extends CityArea{
+	public City(int id, String LocationName) {
+		super(id, LocationName);
+	}
+
 	@Override
 	public String getNodeType() {
 		return "City";
 		
 	}
-	
-	public City(String name) {
-		super.LocationName = name;
-	}
-
-	
-	// Adds a new location to the neighbour variable 
-	public void addNeightbour(int dist, City x) {
-		this.Neighbours.insert(this.Neighbours.getRoot(), x, dist);
-	}
-	
-	// sets a new value to neighbour
-	public void addNeighbour(AvlTree x) {
-		this.Neighbours = x;
-	}
-	
 	
 
 }
