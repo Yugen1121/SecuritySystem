@@ -9,9 +9,9 @@ import java.util.PriorityQueue;
 import java.util.ArrayList;
 import util.Service;
 public class Environment {
-	private Map<Integer, Node> nodes;
-	private Map<Integer, Service> services;
-	private Map<Integer, Incident> incident;
+	private Map<Integer, Node> nodes = new HashMap<>();
+	private Map<Integer, Service> services = new HashMap<>();
+	private Map<Integer, Incident> incident = new HashMap<>();
 	private PriorityQueue<Incident> runningIncidents = new PriorityQueue<Incident>(
 			(a, b) -> Integer.compare(b.getIncidentLevel(), a.getIncidentLevel())
 			);
@@ -21,15 +21,13 @@ public class Environment {
 		this.nodes.put(id, node);
 	}
 	
-	public void addService(Service service) {
-		
-	}
 	
 	public void MakeRequest(int incidentType, int EmergencyLevel, Node node) {
 		Incident New = new Incident(incident.size()+1, node, EmergencyLevel, incidentType);
 		this.incident.put(New.getId(), New);
+		this.runningIncidents.add(New);
 		
-		Map<String, Integer> requestedServices = new HashMap();
+		Map<String, Integer> requestedServices = new HashMap<>();
 		if (EmergencyLevel >= 9) {
 			// Police 5
 			requestedServices.put(Police.Type, 5);
@@ -53,10 +51,8 @@ public class Environment {
 						}
 			// if injury / attack
 			else if(incidentType == 2) {
-				requestedServices.put(Ambulance.Type, 3);
-		}
-
-
+				requestedServices.put(Ambulance.Type, 3);				
+			} 	
 		}
 		else if(EmergencyLevel >= 5) {
 			// Police 3
@@ -105,7 +101,7 @@ public class Environment {
 	}
 	
 	
-	public NeighbourNode flipPath(NeighbourNode node) {
+	public NeighbourNode flipStartPos(NeighbourNode node) {
 		ArrayList<NeighbourNode> ls = new ArrayList<>();
 		ArrayList<Float> ds = new ArrayList<>();
 		while (node != null) {
@@ -133,6 +129,25 @@ public class Environment {
 		return head;
 	}
 	
+	public NeighbourNode flipPath(NeighbourNode node) {
+		ArrayList<NeighbourNode>ls = new ArrayList<>();
+		// make a copy of all the node in the path
+		while (node != null) {
+			// add to the list
+			ls.add(new NeighbourNode(node));
+			// move to parent node
+			node = node.getParent();
+		}
+		// change the pointer node
+		// iterate backwards
+		for (int i = ls.size()-1; i > 0; i--) {
+			// point the node at index i to node at index i-1
+			ls.get(i).setParent(ls.get(i-1));
+		}
+		ls.get(0).setParent(null);
+		return ls.get(ls.size()-1);
+	}
+	
 	public Map<String, Integer> DispatchServices(Map<String, Integer> s, NeighbourNode node, Incident incident) {
 		Map<String, Map<Integer, Service>> mainMap = node.getNode().getServices();
 		for (String key : s.keySet()) {
@@ -146,7 +161,7 @@ public class Environment {
 					while (it.hasNext() && s.get(key) > 0){
 						Service curr = services.get(it.next()); 
 						if (curr.available) {
-							curr.setPath(flipPath(node));
+							curr.setPath(flipStartPos(node));
 							curr.setUnAvailable();
 							incident.addToDispatchList(key, curr.getID());
 							it.remove();
@@ -167,9 +182,12 @@ public class Environment {
 		// check if the node itself has the services needed
 		// iterating through the list of services that are needed
 		Node n = incident.getNode();
+		PriorityQueue<NeighbourNode> hp = new PriorityQueue<>(
+				(a, b) -> Float.compare(a.getDist(), b.getDist())
+				);
 		s = this.DispatchServices(s, new NeighbourNode(n, 0), incident);	
 		if (!s.isEmpty()) {
-			PriorityQueue<NeighbourNode> heap = this.makeDuplicate(new NeighbourNode(n, 0), n.getNeighbour());
+			PriorityQueue<NeighbourNode> heap = this.makeDuplicate(new NeighbourNode(n, 0), hp);
 			NeighbourNode node = heap.poll();
 			HashSet<Integer> visited = new HashSet<>();
 			visited.add(n.getID());
@@ -215,22 +233,6 @@ public class Environment {
 		return heap;
 	}
 	
-	private PriorityQueue<NeighbourNode> makeDuplicate(PriorityQueue<NeighbourNode> heap, NeighbourNode child) {
-		for (NeighbourNode i: new PriorityQueue<>(child.getNode().getNeighbour())) {
-			if(i.getOpen()) {
-				float dist = i.getDist() + child.getDist();
-				Node n = i.getNode();
-				if (i.getCongested()) {
-					dist *= 1.1;
-				}
-				NeighbourNode y = new NeighbourNode(n, dist);
-				child.setParent(y);
-				heap.add(y);
-			}
-		}
-		return heap;  
-		
-	}
 	
 	// dynamic reassignment of the services after the incident is resolved
 	// The idea here is to check the number of services required in the current node. 
@@ -242,14 +244,20 @@ public class Environment {
 	private void reallocateServices(Node node) {
 		Map< String, Integer> required = new HashMap<>(node.getRequiredServices());
 		Map<String, Map<Integer, Service>> services = new HashMap<>(node.getServices());
-		for (String s: services.keySet()) {
+		for (String i: services.keySet()) {
+			services.put(i, new HashMap<Integer, Service>(services.get(i)));
+		}
+		Iterator<String> iterService = services.keySet().iterator();
+		while (iterService.hasNext()) {
+			String s = iterService.next();
 			Map<Integer, Service> serv = services.get(s);
-			for (int i: serv.keySet()) {
-				Service service = serv.get(i);
+			Iterator<Integer> iterServ = serv.keySet().iterator();
+			while (iterServ.hasNext()) {
+				Service service = serv.get(iterServ.next());
 				if (service.getAvailability()) {
 					int num = required.get(s);
 					if (num > 0) {
-						serv.remove(i);
+						iterServ.remove();
 						required.put(s, num-1);
 					}
 					else {
@@ -258,33 +266,36 @@ public class Environment {
 				}
 			}
 			if (serv.isEmpty()) {
-				services.remove(s);
+				iterService.remove();
 			}
 			
 		}
-		
+		// initialises a starting node
 		NeighbourNode start = new NeighbourNode(node, 0);
-		
-		PriorityQueue<NeighbourNode> queue = makeDuplicate(node.getNeighbour(), start);
+		// A deep copy of the neighbouring node priority queue
+		PriorityQueue<NeighbourNode> queue = makeDuplicate(start, node.getNeighbour());
+		// HashSet to keep track of the visited nodes
 		HashSet<Integer> visited = new HashSet<>();
+		// loop should end wither when all the services are allocated or when the queue is empty
 		while (!queue.isEmpty() && !services.isEmpty()) {
+			// pull a node from the queue 
 			NeighbourNode node1 = queue.poll();
-			
+			// check if its already in the visited list
 			if (visited.contains(node1.getNode().getID())) continue;
+			// get the needed services 
 			Map<String, Integer> req = node1.getNode().getNeededServices();
-			
+			// loop through the Map of list of services
 			for (String s: req.keySet()) {
 					Map<Integer, Service> serv = services.get(s);
 					if (serv == null) continue;
 					Iterator<Integer> iter = serv.keySet().iterator();
-					while(!serv.isEmpty() && req.get(s) > 0) {
+					while(iter.hasNext() && req.get(s) > 0) {
 						
 						// get an service from serv then removee it 
 						int key = iter.next();
 						Service curr = serv.get(key);
-						curr.setPath(node1);
+						curr.setPath(flipPath(node1));
 						iter.remove();
-		
 						// decrement the req.get(s) by 1
 						req.put(s, req.get(s)-1);
 					}
@@ -294,7 +305,7 @@ public class Environment {
 					}
 				}
 			// add the neighbour of current node and point the node1 to the new nodes
-			this.makeDuplicate(queue, node1);
+			this.makeDuplicate(node1, queue);
 			
 		}
 		
