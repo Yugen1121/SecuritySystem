@@ -1,0 +1,44 @@
+location,neighbor,distance
+Harrow,Hillingdon,5
+Harrow,Barnet,4
+Harrow,Brent,4
+Harrow,Ealing,3
+Hillingdon,Ealing,3
+Hillingdon,Hounslow,4
+Ealing,Brent,2
+Ealing,Richmond upon Thames,3
+Hounslow,Richmond upon Thames,2
+Richmond upon Thames,Hammersmith and Fulham,1
+Richmond upon Thames,Wandsworth,2
+Brent,Barnet,2
+Brent,Kensington and Chelsea,2
+Brent,Camden,8
+Brent,Westminster,4
+Barnet,Enfield,4
+Barnet,Haringey,8
+Enfield,Haringey,2
+Enfield,Waltham Forest,5
+Haringey,Camden,2
+Haringey,Islington,3
+Haringey,Hackney,4
+Haringey,Waltham Forest,4
+Camden,Islington,1
+Camden,Westminster,1
+Islington,Westminster,1
+Islington,Hackney,1
+Kensington and Chelsea,Westminster,2
+Kensington and Chelsea,Lambeth,2
+Westminster,Southwark,1
+Lambeth,Wandsworth,1
+Lambeth,Southwark,1
+Southwark,Lewisham,2
+Hackney,Tower Hamlet,2
+Hackney,Newham,1
+Hackney,Waltham Forest,2
+Waltham Forest,Redbridge,4
+Redbridge,Newham,5
+Tower Hamlet,Greenwich,1
+Tower Hamlet,Lewisham,2
+Greenwich,Lewisham,2
+Greenwich,Bexley,2
+Newham,Bexley,3
