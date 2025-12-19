@@ -39,7 +39,10 @@ public class NeighbourNode {
 		node = n.getNode();
 		open = n.getOpen();
 		congested = n.getCongested();
-		parent = n.getParent();
+		NeighbourNode p =n.getParent();
+		if (p != null) {
+			parent = new NeighbourNode(p);
+		}
 	}
 	
 	public NeighbourNode(Node node, float key) {
@@ -49,7 +52,9 @@ public class NeighbourNode {
 	}
 	
 	public void setDist(float d) {
+		synchronized(this){
 		this.dist = d;
+		}
 	}
 	
 	public float getDist() {
@@ -69,6 +74,7 @@ public class NeighbourNode {
 	public void toggleOpen() {
 		synchronized(this) {
 			this.open = !this.open;
+			System.out.println(this.open);
 		}
 	}
 	
