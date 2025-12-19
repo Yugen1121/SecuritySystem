@@ -214,6 +214,10 @@ public abstract class Service{
 		}
 	}
 	
+	/**
+	 * for children class to set 
+	 * @return the service type
+	 */
 	public abstract String getServiceType();
 	
 	
