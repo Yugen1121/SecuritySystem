@@ -40,15 +40,32 @@ import util.Police;
  */
 
 public abstract class Node{
-	private int id;
+	/** stores id of the node **/
+	private final int id;
+	
+	/** stores location name **/
 	protected String LocationName;
+	
+	/** stores all the neighbour of the node in a priority min heap using the distance between them **/
 	protected PriorityQueue<NeighbourNode> Neighbours = new PriorityQueue<>((a, b) -> Float.compare(a.getDist(), b.getDist()));
+	
+	/** stores all the incidents in a max heap using their incident level  **/
 	protected PriorityQueue<Incident> runningIncidents = new PriorityQueue<>((b, a) -> Integer.compare(a.getIncidentLevel(), b.getIncidentLevel()));
+	
+	/** a map of incident type pointing to a map of incident id pointing to incident **/
 	protected ObservableMap<String, ObservableMap<Integer, Incident>> incidents = FXCollections.observableHashMap();
+	
+	/** a map of service type pointing to a map of integer pointing to service **/
 	protected ObservableMap<String, ObservableMap<Integer, Service>> services = FXCollections.observableHashMap();
+	
+	/** a map of service type pointing to number of such type required **/
 	public ObservableMap<String, Integer> requiredServices = FXCollections.observableHashMap();
 	
-	
+	/**
+	 * Constructor to initialise all the variables
+	 * @param id node id
+	 * @param LocationName location name
+	 */
 	public Node(int id, String LocationName) {
 		this.id = id;
 		this.LocationName = LocationName;
@@ -65,22 +82,42 @@ public abstract class Node{
 		requiredServices.put(FireTruck.Type, 1);
 	}
 	
+	/**
+	 * returns all the incident
+	 * @return incidents
+	 */
 	public ObservableMap<String, ObservableMap<Integer, Incident>> getIncidents(){
 		return this.incidents;
 	}
 	
+	/**
+	 * adds a neighbour node
+	 * @param node neighbour too add
+	 */
 	public void addNeighbor(NeighbourNode node) {
 		this.Neighbours.add(node);
 	}
 	
+	/**
+	 * adds a incident to running incident
+	 * @param i incident to add
+	 */
 	public void addToRunningIncident(Incident i) {
 		this.runningIncidents.add(i);
 	}
 	
+	/**
+	 * returns a queue of running Incident
+	 * @return returns running incident
+	 */
 	public PriorityQueue<Incident> getRunningIncident() {
 		return this.runningIncidents;
 	}
 	
+	/**
+	 * removes a incident from running list
+	 * @param inc incident to remove
+	 */
 	public void removeRunningIncident(Incident inc) {
 		Iterator<Incident> itr = runningIncidents.iterator();
 		while (itr.hasNext()) {
@@ -92,33 +129,57 @@ public abstract class Node{
 		}
 	}
 	
+	/**
+	 * returns if the node has any running incident
+	 * @return returns if the running incident is empty
+	 */
 	public boolean hasIncident() {
 		return !this.runningIncidents.isEmpty();
 	} 
+	
+	/**
+	 * for children class
+	 * @return the type of class
+	 */
 	abstract String getNodeType();
 	
+	/**
+	 * @return location name of the node
+	 */
 	public String getLocationName() {
 		synchronized(this) {
 		return this.LocationName;
 		}
 	}
 	
-	public void setID(int id) {
-		this.id = id;
-	}
-	
+	/**
+	 * 
+	 * @return the id of the node
+	 */
 	public int getID() { 
 		return this.id;
 	}
 	
+	/**
+	 * returns all the neighbour of the node
+	 * @return the neighbours queue
+	 */
 	public PriorityQueue<NeighbourNode> getNeighbour(){
 		return this.Neighbours;
 	}
 	
+	/**
+	 * returns all the services in the node
+	 * @return the map of service type pointing to mpa of service id pointing to service
+	 */
 	public ObservableMap<String, ObservableMap<Integer, Service>> getServices(){
 		return this.services;
 	}
 	
+	/**
+	 * add a service to the service map
+	 * @param x service to add
+	 */
 	public void addService(Service x) {
 		synchronized(this){
 			Map<Integer, Service> type = this.services.get(x.getServiceType());
@@ -132,23 +193,10 @@ public abstract class Node{
 		}
 	}
 	
-	
-	public void setService(ObservableMap<String, ObservableMap<Integer, Service>> x) {
-		this.services = x; 
-	}
-	
-
-	public boolean dispatchService(int id, String type,NeighbourNode path) {
-		synchronized(this){
-		Service s = this.getServices().get(type).get(id);
-		if (s != null) {
-			s.setPath(path);
-			s.setUnAvailable();
-			return true;
-		}
-		return false;}
-	}
-	
+	/**
+	 * removes the service from the node
+	 * @param node service to remove
+	 */
 	public void removeService(Service node) {
 		synchronized(this) {
 			Map<Integer, Service> type = this.services.get(node.getServiceType());
@@ -163,7 +211,7 @@ public abstract class Node{
 	public Map<String, Float> getIncidentRate() {
 		Map<String, Float> rate = new HashMap<>();
 		for (String x: this.incidents.keySet()) {
-			float number = this.incidents.get(x).size()/100; 
+			float number = this.incidents.get(x).size()/10; 
 			rate.put(x, number);
 		}
 		return rate;
