@@ -40,23 +40,49 @@ import util.nodes.CustomDSA.NeighbourNode;
  */
 
 public abstract class Service{
+	/** stores the service id**/
 	protected final Integer id;
+	
+	/** stores the node where the service is at **/
 	protected Node place;
-	protected boolean available;
+	
+	/** store weather the service is available **/
+	protected boolean available = true;
+	
+	/** stores the incident level it is assigned to**/
 	protected int incidentLevel = 0;
+	
+	/** stores the linked list of path **/
 	protected NeighbourNode path;
-	protected int speed;
+	
+	/** stores the speed of the services **/
+	protected float speed = 0.5f;
+	
+	/** stores the distace travelled **/
 	protected float distanceTravelled;
 	
+	/**
+	 * a constructor 
+	 * @param place current location 
+	 * @param id id of the service
+	 */
 	public Service(Node place, int id) {
 		this.place = place;
 		this.id = id;
 	}
 	
+	/** 
+	 * 
+	 * @return the current location 
+	 */
 	public String getlocation() {
-		return this.place.getLocation();
+		return this.place.getLocationName();
 	}
 	
+	/**
+	 * sets current location
+	 * @param place where the service is at
+	 */
 	public void setLocation(Node place) {
 		synchronized (this) {
 			this.place = place;
@@ -64,26 +90,67 @@ public abstract class Service{
 		
 	}
 	
+	/**
+	 * 
+	 * @return the id of the service
+	 */
 	public int getID() {
 		return this.id;
 	}
 	
+	/**
+	 * 
+	 * @param Path sets the path 
+	 */
 	public void setPath(NeighbourNode Path) {
 		synchronized(this) {
 			this.path = Path;
 		}
 	}
 	
+	/**
+	 * when it is reallocated to a node it sets the path and makes the service available
+	 * @param path
+	 */
+	public void reallocate(NeighbourNode path) {
+		
+		this.incidentLevel = 0;
+		this.setAvailable();
+		setPath(path);
+		
+	}
+	
+	/**
+	 * sets the path and incident level it is assigned to and sets unavailable
+	 * @param path
+	 * @param level
+	 */
+	public void allocate(NeighbourNode path, int level) {
+		
+			setPath(path);
+			this.incidentLevel = level;
+			this.setUnAvailable();
+		
+	}
+	
+	/**
+	 * increase the distance and changes the position of the node and moves along the path 
+	 */
 	public void run() {
 		if (path == null) return;
 		if (path.getParent() == null) {
+			if (this.incidentLevel == 0) {
+				this.setAvailable();
+			}
 			path = null;
 			this.distanceTravelled = 0;
+			return;
 		}
 		// increase the distance
 		this.distanceTravelled += this.speed;
 		// check if the distance travelled is equal or greater than the nex node dist
 		if (this.distanceTravelled >= path.getParent().getDist()) {
+			System.out.println(this.id +": "+ "at location " + this.place.getLocationName());
 			// remove the service from current node
 			path.getNode().removeService(this);
 			// move to next node
@@ -91,28 +158,56 @@ public abstract class Service{
 			Node n = path.getNode();
 			// update the position
 			n.addService(this);
+			if (path != null) {
+				this.place = path.getNode();
+			}
 		}
-		// if the current node is the end the stop
-		if (this.path.getParent() == null) {
+		
+		if (path.getParent() == null) {
+			System.out.println(this.id + " arrived at destination " + this.path.getNode().getLocationName());
+			if (this.incidentLevel == 0) {
+				this.setAvailable();
+			}
 			path = null;
 			this.distanceTravelled = 0;
+			return;
 		}
+		
 	}
 	
+	/**
+	 * 
+	 * @return availability of the service 
+	 */
 	public boolean getAvailability() {
 		synchronized(this) {
 			return this.available;
 		}
 	}
 	
+	/**
+	 * make the service unavailable
+	 */
 	public void setUnAvailable() {
-		this.available = false;
+		synchronized(this) {
+			this.available = false;
+		}
 	}
+	
+	/** 
+	 * make the service available
+	 */
 	
 	public void setAvailable() {
-		this.available = true;
+		synchronized(this) {
+			this.available = true;
+		}
 	}
 	
+	/**
+	 * returns the incident level
+	 * @return
+	 */
 	public int getIncidentLevel() {
 		synchronized(this) {
 			return this.incidentLevel;
