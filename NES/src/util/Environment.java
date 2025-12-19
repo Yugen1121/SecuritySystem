@@ -262,6 +262,13 @@ public class Environment {
 		
 	}
 	
+	/**
+	 * Allocates the needed services, to the incident node at node, mentioned in map s 
+	 * @param s Map of services required to number of services
+	 * @param node the current node
+	 * @param incident incident used to know the incident location and store the information about dispatched services
+	 * @return returns the Map s after updating the number of more required services
+	 */
 	public Map<String, Integer> DispatchServices(Map<String, Integer> s, NeighbourNode node, Incident incident) {
 		
 		Map<String, Map<Integer, Service>> mainMap = new HashMap<>(node.getNode().getServices());
@@ -297,7 +304,12 @@ public class Environment {
 		return s;
 	}
 	
-		
+	
+	/**
+	 * 
+	 * @param s
+	 * @param incident
+	 */
 	public void SearchForServices(Map<String, Integer> s, Incident incident) {
 		// check if the node itself has the services needed
 		// iterating through the list of services that are needed
@@ -336,7 +348,12 @@ public class Environment {
 		return;
 		
 	};
-	
+	/**
+	 * makes a duplicate of the neighbour node and pushesh it into a heap
+	 * @param start parent node whose neighbours are to be passed to the heap 
+	 * @param heap heap too push the nodes to 
+	 * @return priority queue heap 
+	 */
 	private PriorityQueue<NeighbourNode> makeDuplicate(NeighbourNode start, PriorityQueue<NeighbourNode> heap) {
 		NeighbourNode parent = new NeighbourNode(start);
 		// add the copy to the heap with increased distance 
@@ -371,6 +388,10 @@ public class Environment {
 		inc.offRunning();
 	}
 	
+	/**
+	 * Reallocates all the services to the current or other required nodes
+	 * @param inc incident which has services to reallocate
+	 */
 	// dynamic reassignment of the services after the incident is resolved
 	// The idea here is to check the number of services required in the current node. 
 	// if the node has just enough services for it currently then no need to reassign.
