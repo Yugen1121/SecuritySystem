@@ -10,7 +10,7 @@ import util.nodes.Node;
 
 public
 class FireTruck extends Service{
-	public static final String Type = "Police";
+	public static final String Type = "Fire Truck";
 	public FireTruck(Node place, int id) {
 		super(place, id);
 	}
@@ -18,13 +18,6 @@ class FireTruck extends Service{
 	@Override
 	public String getServiceType() {
 		// TODO Auto-generated method stub
-		return "Fire truck";
-	}
-
-	@Override
-	public void run() {
-		// TODO Auto-generated method stub
-		
-	}
-	
+		return "Fire Truck";
+	}	
 }

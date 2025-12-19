@@ -10,7 +10,7 @@ import util.nodes.Node;
  */
 
 public class Ambulance extends Service{
-	public static final String Type = "Police";
+	public static final String Type = "Ambulance";
 	
 	public Ambulance(Node place, int id) {
 		super(place, id);
