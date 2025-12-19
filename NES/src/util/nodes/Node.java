@@ -1,7 +1,12 @@
 
 package util.nodes;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.PriorityQueue;
+
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableMap;
+
 import java.util.Map;
 import util.Service;
 import util.nodes.CustomDSA.NeighbourNode;
@@ -38,27 +43,64 @@ public abstract class Node{
 	private int id;
 	protected String LocationName;
 	protected PriorityQueue<NeighbourNode> Neighbours = new PriorityQueue<>((a, b) -> Float.compare(a.getDist(), b.getDist()));
-	protected Boolean Incident = true;
-	protected Map<String, Map<Integer, Incident>> incidents = new HashMap<>();
-	protected Map<String, Map<Integer, Service>> services = new HashMap<>();
-	protected Map<String, Integer> requiredServices = new HashMap<>();
+	protected PriorityQueue<Incident> runningIncidents = new PriorityQueue<>((b, a) -> Integer.compare(a.getIncidentLevel(), b.getIncidentLevel()));
+	protected ObservableMap<String, ObservableMap<Integer, Incident>> incidents = FXCollections.observableHashMap();
+	protected ObservableMap<String, ObservableMap<Integer, Service>> services = FXCollections.observableHashMap();
+	public ObservableMap<String, Integer> requiredServices = FXCollections.observableHashMap();
+	
 	
 	public Node(int id, String LocationName) {
 		this.id = id;
 		this.LocationName = LocationName;
-		incidents.put(Police.Type, new HashMap<Integer, Incident>());
-		incidents.put(FireTruck.Type, new HashMap<Integer, Incident>());
-		incidents.put(Ambulance.Type, new HashMap<Integer, Incident>());
+		incidents.put(Police.Type, FXCollections.observableHashMap());
+		incidents.put(FireTruck.Type, FXCollections.observableHashMap());
+		incidents.put(Ambulance.Type, FXCollections.observableHashMap());
 		
-		services.put(Police.Type, new HashMap<Integer, Service>());
-		services.put(FireTruck.Type, new HashMap<Integer, Service>());
-		services.put(Ambulance.Type, new HashMap<Integer, Service>());
+		services.put(Police.Type, FXCollections.observableHashMap());
+		services.put(FireTruck.Type, FXCollections.observableHashMap());
+		services.put(Ambulance.Type, FXCollections.observableHashMap());
+		
+		requiredServices.put(Police.Type, 1);
+		requiredServices.put(Ambulance.Type, 1);
+		requiredServices.put(FireTruck.Type, 1);
 	}
-
+	
+	public ObservableMap<String, ObservableMap<Integer, Incident>> getIncidents(){
+		return this.incidents;
+	}
+	
+	public void addNeighbor(NeighbourNode node) {
+		this.Neighbours.add(node);
+	}
+	
+	public void addToRunningIncident(Incident i) {
+		this.runningIncidents.add(i);
+	}
+	
+	public PriorityQueue<Incident> getRunningIncident() {
+		return this.runningIncidents;
+	}
+	
+	public void removeRunningIncident(Incident inc) {
+		Iterator<Incident> itr = runningIncidents.iterator();
+		while (itr.hasNext()) {
+			Incident i = itr.next();
+			if (i == inc) {
+				itr.remove();
+				break;
+			}
+		}
+	}
+	
+	public boolean hasIncident() {
+		return !this.runningIncidents.isEmpty();
+	} 
 	abstract String getNodeType();
 	
-	public String getLocation() {
+	public String getLocationName() {
+		synchronized(this) {
 		return this.LocationName;
+		}
 	}
 	
 	public void setID(int id) {
@@ -73,7 +115,7 @@ public abstract class Node{
 		return this.Neighbours;
 	}
 	
-	public Map<String, Map<Integer, Service>> getServices(){
+	public ObservableMap<String, ObservableMap<Integer, Service>> getServices(){
 		return this.services;
 	}
 	
@@ -84,19 +126,28 @@ public abstract class Node{
 				type.put(x.getID(), x);
 			}
 			else {
-				this.services.put(x.getServiceType(), new HashMap<Integer, Service>());
+				this.services.put(x.getServiceType(), FXCollections.observableHashMap());
 				this.services.get(x.getServiceType()).put(x.getID(), x);
 			}
 		}
 	}
 	
 	
-	public void setService(Map<String, Map<Integer, Service>> x) {
+	public void setService(ObservableMap<String, ObservableMap<Integer, Service>> x) {
 		this.services = x; 
 	}
 	
 
-	
+	public boolean dispatchService(int id, String type,NeighbourNode path) {
+		synchronized(this){
+		Service s = this.getServices().get(type).get(id);
+		if (s != null) {
+			s.setPath(path);
+			s.setUnAvailable();
+			return true;
+		}
+		return false;}
+	}
 	
 	public void removeService(Service node) {
 		synchronized(this) {
@@ -163,12 +214,16 @@ public abstract class Node{
 	public Map<String, Integer> getNeededServices(){
 		Map<String, Integer> r = new HashMap<String, Integer>(this.requiredServices);
 		Map<String, Integer> currentNum = this.getNumberOfCurrentServices();
-		for (String i: r.keySet()) {
+		for (String i: currentNum.keySet()) {
 			Integer num = currentNum.get(i);
 			if (num != null) {
+				
 				int result = r.get(i) - num;
 				if (result > 0) {
 					r.put(i, result);
+				}
+				else {
+					r.put(i, 0);
 				}
 			}
 		}
