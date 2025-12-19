@@ -6,16 +6,41 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.PriorityQueue;
-
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
-
 import java.util.ArrayList;
-import util.Service;
+
+/**
+ * The Environment class represents the core simulation controller.
+ * <p>
+ * It manages:
+ * <ul>
+ *   <li>All nodes in the system</li>
+ *   <li>All services and their allocation</li>
+ *   <li>Incident creation, prioritisation, and resolution</li>
+ *   <li>Service dispatching and dynamic reallocation</li>
+ * </ul>
+ *
+ * <p>
+ * This class acts as the central coordinator, executing updates,
+ * running service logic, and applying pathfinding based dispatch
+ * strategies to allocate and reallocate services efficiently.
+ */
+
 public class Environment {
+	/** Stores all the nodes in the system using their id **/
 	private final ObservableMap<Integer, Node> nodes = FXCollections.observableHashMap();
+	
+	/** Stores all the Services in the system using their id **/
 	private final ObservableMap<Integer, Service> services = FXCollections.observableHashMap();
+	
+	/** Stores all the Incident in the system using their id **/
 	private final ObservableMap<Integer, Incident> incident = FXCollections.observableHashMap();
+	
+	/** 
+	 * Stores all the running Incident in the system 
+	 * in priority order using their incident level
+	 * **/
 	private PriorityQueue<Incident> runningIncidents = new PriorityQueue<Incident>(
 			(a, b) -> Integer.compare(b.getIncidentLevel(), a.getIncidentLevel())
 			);
@@ -24,6 +49,12 @@ public class Environment {
 		
 	}
 	
+	/**
+	 * Updates the environment state
+	 * 
+	 * @param updateAll if true, all the nodes recalculates the required services;
+	 * other wise just updated the services 	
+	 */
 	public void update(Boolean updateAll) {
 		if (updateAll) {
 			for (Node n: this.nodes.values()) {
@@ -35,29 +66,58 @@ public class Environment {
 		}
 		return;
 	}
-	
+	/**
+	 * generates a new service id
+	 * @return the next available service id
+	 */
 	public int getNewServiceId() {
 		return services.size() + 1;
 	}
 	
+	/**
+	 * adds service s to the environment 
+	 * @param s the service to add
+	 */
 	public void addService(Service s) {
 		services.put(s.getID(), s);
 	}
+	
+	/**
+	 * returns all the nodes in the environment 
+	 * @return returns the Map of node id to node
+	 */
 	public Map<Integer, Node> getNodes(){
 		return this.nodes;
 	}
-
+	
+	
+	/**
+	 * adds node using id
+	 * @param id is used to map to the node
+	 * @param node is the value id points to in the map
+	 */
 	public void addNode(int id, Node node) {
 		this.nodes.put(id, node);
 	}
 	
-	
+	/**
+	 * makes a incident request
+	 * adds the incident to incident map and runningIncident
+	 * checks the incident level and incident type and assigns the number
+	 * of each services required to the incident
+	 * Searches for the required service to allocate them to the incident
+	 * @param incidentType used to determine the type of incident
+	 * @param EmergencyLevel used to indicate the severity of the incident
+	 * @param node used to know which node the incidet took place
+	 */
 	public void MakeRequest(int incidentType, int EmergencyLevel, Node node) {
 		Incident New = new Incident(incident.size()+1, node, EmergencyLevel, incidentType);
 		this.incident.put(New.getId(), New);
 		this.runningIncidents.add(New);
 		node.addToIncidents(New);
 		node.addToRunningIncident(New);
+		
+		// Service requirement base of incident type and EmergencyLevel
 		Map<String, Integer> requestedServices = new HashMap<>();
 		if (EmergencyLevel >= 9) {
 			
@@ -138,7 +198,16 @@ public class Environment {
 		
 	}
 	
-	
+	/**
+	 * Used to recalculate the total distance from node 1 to end node
+	 * input: endNode<x-node1<y+x-node2
+	 * right now the starting holds the total distance to travel 
+	 * the algorithm flips it and makes the end node the total distance to travel
+	 * and recalculates the total distance from curr node to each node in the path
+	 * 
+	 * @param node linkedlist to recalculate the distance
+	 * @return recalculated distance 
+	 */
 	public NeighbourNode flipStartPos(NeighbourNode node) {
 		ArrayList<NeighbourNode> ls = new ArrayList<>();
 		ArrayList<Float> ds = new ArrayList<>();
@@ -172,24 +241,25 @@ public class Environment {
 		return head;
 	}
 	
+	/**
+	 * Flips the path
+	 * input: start<-node1<-node2<-end
+	 * output: start->node1->node2->end
+	 * @param node  linked list to flip 
+	 * @return
+	 */
 	public NeighbourNode flipPath(NeighbourNode node) {
-		ArrayList<NeighbourNode>ls = new ArrayList<>();
-		// make a copy of all the node in the path
-		while (node != null) {
-			// add to the list
-			ls.add(new NeighbourNode(node));
-			// move to parent node
-			node = node.getParent();
+		NeighbourNode head = new NeighbourNode(node);
+		NeighbourNode ptr = new NeighbourNode(head.getParent());
+		head.setParent(null);
+		while (ptr != null ) {
+			NeighbourNode nxt = ptr.getParent();
+			ptr.setParent(head);
+			head = ptr;
+			ptr = nxt;
 		}
-		// change the pointer node
-		// iterate backwards
-		for (int i = ls.size()-1; i > 0; i--) {
-			// point the node at index i to node at index i-1
-			ls.get(i).setParent(ls.get(i-1));
-			
-		}
-		ls.get(0).setParent(null);
-		return ls.get(ls.size()-1);
+		return head;
+		
 	}
 	
 	public Map<String, Integer> DispatchServices(Map<String, Integer> s, NeighbourNode node, Incident incident) {
@@ -272,7 +342,7 @@ public class Environment {
 		// add the copy to the heap with increased distance 
 		for (NeighbourNode i:  new PriorityQueue<>(parent.getNode().getNeighbour())) {
 			// makes sure the closed road is avoided
-			if (i.getOpen()) {
+			if (i.getOpen() == true) {
 				float dist = i.getDist()+parent.getDist();
 				Node n = i.getNode();
 				// if the road is congested then the distance is assumed to be 1.1 times the original
