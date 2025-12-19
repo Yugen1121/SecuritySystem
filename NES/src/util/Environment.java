@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.PriorityQueue;
+
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
 import java.util.ArrayList;
@@ -114,7 +116,9 @@ public class Environment {
 		Incident New = new Incident(incident.size()+1, node, EmergencyLevel, incidentType);
 		this.incident.put(New.getId(), New);
 		this.runningIncidents.add(New);
-		node.addToIncidents(New);
+		Platform.runLater(() -> {
+	        node.addToIncidents(New);   // ObservableMap mutation
+	    });
 		node.addToRunningIncident(New);
 		
 		// Service requirement base of incident type and EmergencyLevel

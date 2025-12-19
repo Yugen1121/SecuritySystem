@@ -295,7 +295,7 @@ public class NodeDetailPane extends VBox {
     	type.setPromptText("Select type");
     	Button btn = new Button("Submit");
     	btn.setOnAction(e -> {
-    		env.MakeRequest(type.getValue(), level.getValue(), env.getNodes().get(node.getID()));
+    		new Thread(() -> {env.MakeRequest(type.getValue(), level.getValue(), env.getNodes().get(node.getID()));}).start();
     		buildUI();
     	});
     	detailBlock.getChildren().setAll(
